@@ -1,0 +1,53 @@
+<!--创建基类，使用Jinja2的模板继承机制-->
+
+<!-- 第一行告诉模板引擎这个模板“继承”另一个模板。
+
+    1. 当模板系统对这个模板求值时，首先定位父模板
+    2. 本文件适用于第三章
+-->
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Flasky{% endblock %}
+
+<!-- 添加图标-->
+{% block head %}
+{{ super() }}
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+<link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+{% endblock %}
+
+
+{% block navbar %}
+<div class="navbar navbar-inverse" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Flasky</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li><a href="/">Home</a> </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!--这个模板的content块中只有一个<div>容器
+        包含一个page_content的空块，块中内容由衍生模板定义
+    -->
+    {% block page_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{{ moment.include_moment() }}
+{% endblock %}
