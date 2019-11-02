@@ -1,7 +1,6 @@
 <!--创建基类，使用Jinja2的模板继承机制-->
 
 <!-- 第一行告诉模板引擎这个模板“继承”另一个模板。
-
     1. 当模板系统对这个模板求值时，首先定位父模板
     2. 本文件适用于第三章
 -->
@@ -40,9 +39,13 @@
 
 {% block content %}
 <div class="container">
-    <!--这个模板的content块中只有一个<div>容器
-        包含一个page_content的空块，块中内容由衍生模板定义
-    -->
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        {{ message }}
+    </div>
+    {% endfor %}
+
     {% block page_content %}{% endblock %}
 </div>
 {% endblock %}
