@@ -40,9 +40,13 @@
 
 {% block content %}
 <div class="container">
-    <!--这个模板的content块中只有一个<div>容器
-        包含一个page_content的空块，块中内容由衍生模板定义
-    -->
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-warning">
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        {{ message }}
+    </div>
+    {% endfor %}
+
     {% block page_content %}{% endblock %}
 </div>
 {% endblock %}

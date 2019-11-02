@@ -1,4 +1,4 @@
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, session, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import FlaskForm
@@ -36,6 +36,12 @@ def internal_server_error(e):
 def index():
     form = NameForm()
     if form.validate_on_submit():
+        old_name = session.get('name')
+        if old_name is not None and old_name != form.name.data:
+            # 如果两次提交的名字不一样则调用flash()函数
+            # 仅调用flash()不能渲染消息
+            # Flask把get_flashed_messages()函数开放给模板
+            flash('Looks like you have changed your name!')
         session['name'] = form.name.data
         # 生成http重定向响应
         return redirect(url_for('index'))
