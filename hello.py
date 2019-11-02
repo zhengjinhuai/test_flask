@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
+from flask_script import Shell, Manager
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -23,6 +24,7 @@ app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True  # 在请求结束时自动�
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
+manager = Manager(app)
 
 
 class Role(db.Model):
@@ -49,6 +51,18 @@ class User(db.Model):
 class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
+def make_shell_context():
+    """
+        因为每次启动shell会话都需要导入数据库实例和模型
+        因此让Flask-Script的Shell命令自动导入特定对象
+        也就是不用总是自己from hello import User, Role
+    """
+    return dict(app=app, db=db, User=User, Role=Role)
+
+
+manager.add_command("shell", Shell(make_shell_context()))
 
 
 @app.errorhandler(404)
@@ -82,4 +96,4 @@ def index():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    manager.run(debug=True)
