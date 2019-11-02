@@ -1,20 +1,49 @@
+import os
 from flask import Flask, render_template, session, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
+from flask_sqlalchemy import SQLAlchemy
+
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Flask类的构造函数只有一个参数——程序主模块或包的名字
 app = Flask(__name__)
 # 实现CSRF保护，设置一个密钥生成加密令牌，令牌验证请求中表单数据的真伪
 # app.config存储框架、扩展和程序本身的配置变量
 app.config['SECRET_KEY'] = 'hard to guess string'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://pythonista:1234@localhost/flasksql'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True # 追踪对象的修改
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True  # 在请求结束时自动提交数据库数据,不用手动提交
 
 # Flask扩展一般再创建程序实例时初始化
 # Flask-Bootstrap, Flask-Moment 的初始化，
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+db = SQLAlchemy(app)
+
+
+class Role(db.Model):
+    __tablename__ = 'roles'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    # backref在关系的另一个模型中添加反向引用，使用role_id访问Role
+    users = db.relationship('User', backref='role')
+
+    def __repr__(self):
+        return '<Role %r>' % self.name
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    def __repr__(self):
+        return '<User %r>' % self.username
 
 
 class NameForm(FlaskForm):
@@ -36,16 +65,20 @@ def internal_server_error(e):
 def index():
     form = NameForm()
     if form.validate_on_submit():
-        old_name = session.get('name')
-        if old_name is not None and old_name != form.name.data:
-            # 如果两次提交的名字不一样则调用flash()函数
-            # 仅调用flash()不能渲染消息
-            # Flask把get_flashed_messages()函数开放给模板
-            flash('Looks like you have changed your name!')
+        user = User.query.filter_by(username=form.name.data).first()
+        if user is None:
+            user = User(username=form.name.data)
+            db.session.add(user)
+            session['known'] = False
+        else:
+            session['known'] = True
         session['name'] = form.name.data
-        # 生成http重定向响应
+        form.name.data = ''
         return redirect(url_for('index'))
-    return render_template('index.html', form=form, name=session.get('name'))
+    return render_template('index.html',
+                           form=form,
+                           name=session.get('name'),
+                           known=session.get('known', False))
 
 
 if __name__ == '__main__':
