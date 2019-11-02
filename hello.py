@@ -7,6 +7,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_script import Shell, Manager
+from flask_migrate import Migrate, MigrateCommand
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -25,6 +26,8 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 manager = Manager(app)
+migrate = Migrate(app, db)
+
 
 
 class Role(db.Model):
@@ -63,6 +66,9 @@ def make_shell_context():
 
 
 manager.add_command("shell", Shell(make_shell_context()))
+# 为了导出数据库迁移命令，提供一个MigrateCommand类
+# MigrateCommand附加到manager对象上
+manager.add_command('db', MigrateCommand)
 
 
 @app.errorhandler(404)
@@ -96,4 +102,4 @@ def index():
 
 
 if __name__ == '__main__':
-    manager.run(debug=True)
+    manager.run()
