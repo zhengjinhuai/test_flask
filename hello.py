@@ -8,6 +8,8 @@ from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_script import Shell, Manager
 from flask_migrate import Migrate, MigrateCommand
+from flask_mail import Mail, Message
+from threading import Thread
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -20,6 +22,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://pythonista:1234@localhost/flask
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True # 追踪对象的修改
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True  # 在请求结束时自动提交数据库数据,不用手动提交
 
+app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+
 # Flask扩展一般再创建程序实例时初始化
 # Flask-Bootstrap, Flask-Moment 的初始化，
 bootstrap = Bootstrap(app)
@@ -28,6 +36,7 @@ db = SQLAlchemy(app)
 manager = Manager(app)
 migrate = Migrate(app, db)
 
+mail = Mail(app)
 
 
 class Role(db.Model):
@@ -49,6 +58,22 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+
+def send_async_email(app, msg):
+    """使用app.app_context() 人工创建激活上下文"""
+    with app.app_context():
+        mail.send(msg)
+
+
+def send_email(to, subject, template, **kwargs):
+    msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + ' ' + subject,
+                  sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
 
 
 class NameForm(FlaskForm):
