@@ -2,6 +2,7 @@
     Flask项目中config.py为配置文件，包括数据库的相关信息
 """
 import os
+
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -26,18 +27,18 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+                              'mysql://pythonista:1234@localhost/dev_flasksql'
 
 
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') or \
-        'sqlite://'
+                              'mysql://pythonista:1234@localhost/test_flasksql'
 
 
 class ProductionConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(basedir, 'data.sqlite')
+                              'mysql://pythonista:1234@localhost/flasksql'
 
 
 # config 字典中注册了不同的配置环境，而且还注册了一个默认配置
