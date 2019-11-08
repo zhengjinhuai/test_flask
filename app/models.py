@@ -1,9 +1,9 @@
 # db是在工厂函数__init__.py中实例化的SQLAlchemy()对象
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin
-from flask import current_app
-from . import db, login_manager
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from flask import current_app
+from flask_login import UserMixin
+from . import db, login_manager
 
 
 class Role(db.Model):
@@ -72,6 +72,28 @@ class User(UserMixin, db.Model):
         db.session.add(user)
         return True
 
+    def generate_email_change_token(self, new_email, expiration=3600):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps(
+            {'change_email': self.id, 'new_email': new_email}).decode('utf-8')
+
+    def change_email(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token.encode('utf-8'))
+        except:
+            return False
+        if data.get('change_email') != self.id:
+            return False
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+        if self.query.filter_by(email=new_email).first() is not None:
+            return False
+        self.email = new_email
+        db.session.add(self)
+        return True
+
     def __repr__(self):
         return '<User %r>' % self.username
 
@@ -89,6 +111,3 @@ def load_user(user_id):
 # 由于这种绑定关系的存在，那么每次新的请求发生时都需要获取user
 # 那么load_user其作用就是每次新请求时调用该方法获取user并绑定到当前的请求上下文，
 # 绑定的意义在于每次当我们使用current_user的时候，会直接从当前上下文中返回。
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
