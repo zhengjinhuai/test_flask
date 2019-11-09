@@ -22,3 +22,14 @@ from . import views, errors
 
 # 蓝图仅仅记录了未来应该发生的操作， 而不是当即实现
 # 蓝本在工厂函数create_app() 中注册到程序上
+
+from ..models import Permission
+
+
+# 1.app_context_processor作为一个装饰器修饰一个函数
+# 2.函数的返回结果必须是dict，
+#   届时dict中的key将作为变量在所有模板中可见。
+# 3. 因为模板类中可能也需要检查权限，所以Permission类中的所有常量必须要能够在模板中访问
+@main.app_context_processor
+def inject_permission():
+    return dict(Permission=Permission)
