@@ -19,12 +19,13 @@ def before_request():
         3. 请求的url不在蓝本中，而且也不是对静态文件的请求。
         endpoint的介绍：https://www.cnblogs.com/eric-nirnava/p/endpoint.html
     """
-    if current_user.is_authenticated \
-            and not current_user.confirmed \
-            and request.endpoint \
-            and request.blueprint != 'auth' \
-            and request.endpoint != 'static':
-        return redirect(url_for('auth.unconfirmed'))
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed \
+                and request.endpoint \
+                and request.blueprint != 'auth' \
+                and request.endpoint != 'static':
+            return redirect(url_for('auth.unconfirmed'))
 
 
 @auth.route('/unconfirmed')
