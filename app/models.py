@@ -88,6 +88,8 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)  # 用户每次访问网站后都要刷新时间
     avatar_hash = db.Column(db.String(32))  # gavatar头像的MD5散列值
+    # 用户和博客文章是一对多的关系，相当于用户是father，有多个son，即有多篇博客文章
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)  # 这里用**kwargs将关键字参数传递给父类
@@ -98,7 +100,6 @@ class User(UserMixin, db.Model):
                 self.role = Role.query.filter_by(default=True).first()
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = self.gravatar_hash()
-
 
     @property
     def password(self):
@@ -217,3 +218,10 @@ def load_user(user_id):
 # 由于这种绑定关系的存在，那么每次新的请求发生时都需要获取user
 # 那么load_user其作用就是每次新请求时调用该方法获取user并绑定到当前的请求上下文，
 # 绑定的意义在于每次当我们使用current_user的时候，会直接从当前上下文中返回。
+
+class Post(db.Model):
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
