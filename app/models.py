@@ -11,11 +11,11 @@ from . import db, login_manager
 
 
 class Permission(object):
-    FOLLOW = 1
-    COMMENT = 2
-    WRITE = 4
-    MODERATE = 8
-    ADMIN = 16
+    FOLLOW = 1  # Follow的权限
+    COMMENT = 2  # 评论的权限
+    WRITE = 4  # 写博客的权限
+    MODERATE = 8  # 管理其他用户的评论的权限
+    ADMIN = 16  # 拥有全部权限
 
 
 class Role(db.Model):
@@ -110,6 +110,7 @@ class User(UserMixin, db.Model):
                                 backref=db.backref('followed', lazy='joined'),
                                 lazy='dynamic',
                                 cascade='all, delete-orphan')
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)  # 这里用**kwargs将关键字参数传递给父类
@@ -282,6 +283,7 @@ class Post(db.Model):
     body_html = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')  # comment可以通过comment.post所评论博客
 
     @staticmethod
     def on_changed_body(target, value, oldvalue, initiator):
@@ -295,3 +297,24 @@ class Post(db.Model):
 
 db.event.listen(Post.body, 'set', Post.on_changed_body) # 用于监听博客body的改变
 
+
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    disabled = db.Column(db.Boolean)  # 管理员屏蔽不恰当的言论
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 'em', 'i',
+                        'strong']
+        target.body_html = bleach.linkify(bleach.clean(
+            markdown(value, output_format='html'),
+            tags=allowed_tags, strip=True))
+
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_body)
