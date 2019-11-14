@@ -68,7 +68,7 @@ def register():
                     username=form.username.data,
                     password=form.password.data)
         db.session.add(user)
-        db.session.commit()  #  之所以要发送确认邮件之前调用db.session.commit()，是因为获取id值
+        db.session.commit()  # 之所以要发送确认邮件之前调用db.session.commit()，是因为获取id值
         token = user.generate_confirmation_token()
         send_email(user.email, 'Confirm Your Account',
                    'auth/email/confirm', user=user, token=token)
